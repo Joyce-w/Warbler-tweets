@@ -223,6 +223,12 @@ nav + .container {
   align-items: center;
 }
 
+.full-width img {
+  object-fit: cover;
+  width: 100vw;
+  position: top center;
+}
+
 .user-stats > .ml-auto {
   display: flex;
   align-items: center;
