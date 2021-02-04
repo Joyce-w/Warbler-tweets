@@ -94,6 +94,8 @@ class User(db.Model):
         nullable=False,
     )
 
+
+    # --------------- relationships -------------------
     messages = db.relationship('Message')
 
     followers = db.relationship(
@@ -115,6 +117,7 @@ class User(db.Model):
         secondary="likes"
     )
 
+    # ------------- User methods------------------
     def __repr__(self):
         return f"<User #{self.id}: {self.username}, {self.email}>"
 
