@@ -5,7 +5,7 @@ from flask_debugtoolbar import DebugToolbarExtension
 from sqlalchemy.exc import IntegrityError
 
 from forms import UserAddForm, LoginForm, MessageForm, UserEditForm
-from models import db, connect_db, User, Message
+from models import db, connect_db, User, Message, Likes, Follows
 
 CURR_USER_KEY = "curr_user"
 
@@ -229,6 +229,29 @@ def profile():
         flash("Password is incorrect, please try again", "danger")
     return render_template("users/edit.html", form=form)
 
+@app.route('/users/add_like/<int:msg_id>', methods=["GET", "POST"])
+def like_msg(msg_id):
+    """Like & unlike tweet messages"""
+
+    if g.user:
+        user = session[CURR_USER_KEY]
+
+        # search Likes from current user
+        existing_like = Likes.query.filter(Likes.user_id == user).all()
+
+        # list message id of likes
+        likes = [l.message_id for l in existing_like]
+        
+        if msg_id in likes:
+            msg = Likes.query.filter(Likes.message_id == msg_id).delete()
+            db.session.commit()
+        else:
+            new_like = Likes(user_id=user, message_id=msg_id)
+
+            db.session.add(new_like)
+            db.session.commit()
+        return redirect("/")
+
 
 @app.route('/users/delete', methods=["POST"])
 def delete_user():
@@ -309,8 +332,10 @@ def homepage():
 
     if g.user:
 
+        # user_id of following users
         following_user_id = [u.id for u in g.user.following]
 
+        # query of first 100 messages assoc w/ following users
         messages = (Message
                     .query
                     .filter(Message.user_id.in_(following_user_id))
@@ -318,8 +343,11 @@ def homepage():
                     .limit(100)
                     .all())
 
+        liked_msg = Likes.query.all()
 
-        return render_template('home.html', messages=messages)
+        likes = [l.message_id for l in liked_msg]
+        
+        return render_template('home.html', messages=messages, likes=likes)
 
     else:
         return render_template('home-anon.html')
