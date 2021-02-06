@@ -141,6 +141,7 @@ def users_show(user_id):
     """Show user profile."""
 
     user = User.query.get_or_404(user_id)
+    num_likes = len(user.likes)
 
     # snagging messages in order from the database;
     # user.messages won't be in order by default
@@ -150,7 +151,7 @@ def users_show(user_id):
                 .order_by(Message.timestamp.desc())
                 .limit(100)
                 .all())
-    return render_template('users/show.html', user=user, messages=messages)
+    return render_template('users/show.html', user=user, messages=messages, num_likes=num_likes)
 
 
 @app.route('/users/<int:user_id>/following')
