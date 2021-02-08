@@ -141,7 +141,7 @@ def users_show(user_id):
     """Show user profile."""
 
     user = User.query.get_or_404(user_id)
-    num_likes = len(user.likes)
+    num_likes = user.likes
 
     # snagging messages in order from the database;
     # user.messages won't be in order by default
@@ -151,6 +151,7 @@ def users_show(user_id):
                 .order_by(Message.timestamp.desc())
                 .limit(100)
                 .all())
+
     return render_template('users/show.html', user=user, messages=messages, num_likes=num_likes)
 
 
@@ -207,6 +208,21 @@ def stop_following(follow_id):
 
     return redirect(f"/users/{g.user.id}/following")
 
+@app.route('/users/<int:user_id>/liked-msgs', methods=["GET", "POST"])
+def show_liked_post(user_id):
+    """Disply messages for the user's liked messages"""
+
+    if g.user:
+        user = session[CURR_USER_KEY]
+
+    user = User.query.get_or_404(user_id)
+    messages = user.likes
+    
+    liked_msg = Likes.query.all()
+
+    num_likes = [l.message_id for l in liked_msg]
+
+    return render_template('users/liked_msgs.html', user=user, messages=messages, num_likes=num_likes)
 
 @app.route('/users/profile', methods=["GET", "POST"])
 def profile():

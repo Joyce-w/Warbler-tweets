@@ -30,7 +30,8 @@
           </li>
           <li class="stat">
             <p class="small">Likes</p>
-            <h4>{{num_likes}}</h4>
+            <h4><a href="/users/{{ user.id }}/liked-msgs">{{ num_likes | length }}</a>
+            </h4>
           </li>
           <div class="ml-auto">
             {% if g.user.id == user.id %}
@@ -62,6 +63,7 @@
     <p>{{user.bio}}</p>
     <p class="user-location"><span class="fa fa-map-marker"></span>{{user.location}}</p>
   </div>
+
 
   {% block user_details %}
   {% endblock %}
