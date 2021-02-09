@@ -15,7 +15,7 @@ from models import db, connect_db, Message, User
 # before we import our app, since that will have already
 # connected to the database
 
-os.environ['DATABASE_URL'] = "postgresql:///warbler-test"
+os.environ['DATABASE_URL'] = "postgresql:///warbler_test"
 
 
 # Now we can import app
@@ -29,8 +29,9 @@ from app import app, CURR_USER_KEY
 db.create_all()
 
 # Don't have WTForms use CSRF at all, since it's a pain to test
-
 app.config['WTF_CSRF_ENABLED'] = False
+app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY', "it's a secret")
+
 
 
 class MessageViewTestCase(TestCase):
@@ -44,12 +45,18 @@ class MessageViewTestCase(TestCase):
 
         self.client = app.test_client()
 
-        self.testuser = User.signup(username="testuser",
-                                    email="test@test.com",
-                                    password="testuser",
-                                    image_url=None)
+        u1 = User(id = 8989,
+                    username="testuser",
+                    email="test@test.com",
+                    password="testuser",
+                    image_url=None)
 
+        db.session.add(u1)
         db.session.commit()
+
+        self.u1_id= u1.id
+
+        self.client = app.test_client()
 
     def test_add_message(self):
         """Can use add a message?"""
@@ -59,7 +66,7 @@ class MessageViewTestCase(TestCase):
 
         with self.client as c:
             with c.session_transaction() as sess:
-                sess[CURR_USER_KEY] = self.testuser.id
+                sess[CURR_USER_KEY] = self.u1_id
 
             # Now, that session setting is saved, so we can have
             # the rest of ours test
@@ -71,3 +78,54 @@ class MessageViewTestCase(TestCase):
 
             msg = Message.query.one()
             self.assertEqual(msg.text, "Hello")
+
+    def test_existing_message(self):
+        """Viewing existing message"""
+
+        m = Message(
+            id=1234,
+            text="a test message",
+            user_id=self.u1_id
+        )
+        
+        db.session.add(m)
+        db.session.commit()
+
+        self.m1_id = m.id
+
+        with self.client as c:
+            with c.session_transaction() as sess:
+                sess[CURR_USER_KEY] = self.u1_id
+                
+            resp = c.get(f'/messages/{self.m1_id}')
+
+            self.assertEqual(resp.status_code, 200)
+            self.assertIn(m.text, str(resp.data))
+
+
+    def test_del_message(self):
+        """Test delete route on messages"""
+        
+        m = Message(
+        id=1234,
+        text="a test message",
+        user_id=self.u1_id
+        )
+        
+        db.session.add(m)
+        db.session.commit()
+
+        self.m1_id = m.id
+
+        with self.client as c:
+            with c.session_transaction() as sess:
+                sess[CURR_USER_KEY] = self.u1_id
+
+            resp = c.post(f"/messages/{self.m1_id}/delete")
+
+            msg = Message.query.filter(Message.id == self.m1_id).all()
+            self.assertEqual(len(msg), 0)
+
+
+
+
